@@ -25,10 +25,6 @@ class TaskController extends Controller
         return redirect()->route('show.project', $project->id)->with('success', 'Task created successfully!');
     }
 
-    // public function show(Project $project, Task $task){
-    //     return view('task', compact('project', 'task'));
-    // }
-
     public function showEdit(Project $project, Task $task){
         return view('edittask', compact('project', 'task'));
     }
@@ -41,11 +37,11 @@ class TaskController extends Controller
             $validated['completed_at']=null;
         }
         $task->update($validated);
-        return redirect()->route('show.project', $project->id);
+        return redirect()->route('show.project', $project->id)->with('success', 'Task edited successfully!');
     }
 
     public function delete(Project $project, Task $task){
         $task->delete();
-        return redirect()->route('show.project', $project->id);
+        return redirect()->route('show.project', $project->id)->with('success', 'Task deleted successfully!');
     }
 }

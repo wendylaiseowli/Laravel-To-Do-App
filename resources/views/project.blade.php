@@ -4,6 +4,9 @@
             {{ __('Project') }}
         </h2>
     </x-slot>
+    @if(session('success'))
+        {{ session('success') }}
+    @endif
     <div class="flex items-center justify-between bg-white p-4 mt-2 shadow">
         <p class="font-semibold">Filter</p>
         <form method="GET" action={{route('show.project', $project->id)}}>

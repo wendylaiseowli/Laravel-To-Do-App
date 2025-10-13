@@ -4,7 +4,9 @@
             {{ __('Dashboard') }}
         </h2>
     </x-slot>
-
+    @if (session('success'))
+        {{ session('success') }}
+    @endif
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -67,61 +69,3 @@
         @endif
     </div>
 </x-app-layout>
-
-
-{{-- <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
-
-            <!-- Create Project Button -->
-            <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-semibold text-gray-900">Projects</h1>
-                <a href="{{ route('new.project') }}"
-                   class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    + Create New Project
-                </a>
-            </div>
-
-            <!-- Projects List -->
-            <div class="bg-white shadow-sm sm:rounded-lg p-6">
-                @if($projects->count())
-                    <div class="grid gap-6">
-                        @foreach ($projects as $project)
-                            <div class="border border-gray-200 rounded-lg p-4 flex justify-between items-start hover:shadow-md transition">
-                                <div>
-                                    <h2 class="text-lg font-semibold text-gray-800">{{ $project->project_name }}</h2>
-                                    <p class="text-gray-600 mt-1">{{ $project->description }}</p>
-                                </div>
-
-                                <div class="flex gap-2">
-                                    <a href="{{ route('show.edit.project', $project->id) }}"
-                                       class="text-blue-600 hover:text-blue-800 font-medium">Edit</a>
-
-                                    <form method="POST" action="{{ route('delete.project', $project->id) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="text-red-600 hover:text-red-800 font-medium"
-                                                onclick="return confirm('Are you sure you want to delete this project?')">
-                                            Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <p class="text-gray-600 text-center py-6">No projects yet. Start by creating one!</p>
-                @endif
-            </div>
-
-        </div>
-    </div>
-</x-app-layout> --}}
-
