@@ -1,0 +1,11 @@
+vendor
+composer.lock
+dynamodb_local_test.db
+/nbproject
+*.log
+.php_cs.cache
+.idea
+
+.phpunit.result.cache
+
+/node_modules
