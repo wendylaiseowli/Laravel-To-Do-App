@@ -66,9 +66,9 @@ class ProjectController extends Controller
     }
 
     public function delete(Project $project){
-        $project->delete();
         $task= $project->tasks();
         $task->delete();
+        $project->delete();
         return redirect('/dashboard')->with('success', 'Project deleted successfully!');
     }
 }
