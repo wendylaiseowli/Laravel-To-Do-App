@@ -1,0 +1,51 @@
+name : Deploy laravel project to EC2
+
+on :
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to EC2
+      run: |
+        ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+
+          if [ ! -d "${{ secrets.EC2_PATH }}/.git" ]; then
+            # Project does not exist
+            git clone https://github.com/wendylaiseowli/Laravel-To-Do-App.git ${{ secrets.EC2_PATH }}
+
+            cd ${{ secrets.EC2_PATH }}
+            cp .env.example .env
+
+            # Replace database credentials using environment variables
+            sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/" .env
+            sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/" .env
+            sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/" .env
+
+            php artisan key:generate
+          else
+            cd ${{ secrets.EC2_PATH }}
+            git pull origin main
+          fi
+
+          #common step for both new and existing porject
+          composer install --no-dev --prefer-dist --no-interaction
+          php artisan migrate --force
+          php artisan optimize:clear
+          sudo systemctl restart php-fpm
+          sudo systemctl restart nginx
+        EOF

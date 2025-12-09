@@ -16,7 +16,7 @@ class ProjectTest extends TestCase
     /**
      * A basic feature test example.
      */
-    public function test_show_all_projects_and_thisWeek_tasks(){
+    public function test_show_function_show_all_projects_and_thisWeek_pending_tasks(){
         Carbon::setTestNow(Carbon::parse('2025-11-03')); // Monday fixed date
 
         $user = User::factory()->create();
@@ -61,7 +61,7 @@ class ProjectTest extends TestCase
         });
     }
 
-    public function test_show_all_projects_and_today_tasks(){
+    public function test_show_function_show_all_projects_and_today_completed_tasks(){
         Carbon::setTestNow(Carbon::parse('2025-11-03')); // Monday fixed date
 
         $user = User::factory()->create();
@@ -106,7 +106,7 @@ class ProjectTest extends TestCase
         });
     }
 
-    public function test_show_all_projects_and_overDue_tasks(){
+    public function test_show_function_show_all_projects_and_overDue_pending_tasks(){
         Carbon::setTestNow(Carbon::parse('2025-11-03')); // Monday fixed date
 
         $user = User::factory()->create();
@@ -151,7 +151,26 @@ class ProjectTest extends TestCase
         });
     }
 
-    public function test_display_create_project_form()
+    public function test_show_function_when_there_is_no_task_for_that_project(){
+        Carbon::setTestNow(Carbon::parse('2025-11-03')); // Monday fixed date
+
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $project = Project::factory()->create([
+            'user_id'=>$user->id,
+        ]);
+
+        $response = $this->get(route('show.project', $project));
+        $response->assertStatus(200);
+        $response->assertViewIs('project');
+
+        // Verify only the thisWeek task is shown
+        $response->assertViewHas('tasks', function ($tasks) {
+            return $tasks->count() === 0;
+        });
+    }
+    public function test_showNew_function_display_create_project_form()
     {
         $user = User::factory()->create();
         $this->actingAs($user);
@@ -162,13 +181,21 @@ class ProjectTest extends TestCase
         $response->assertViewIs('newproject');
     }
 
-    public function test_create_project_successfully(){
+    public function test_showNew_function_redirect_login_for_unauthenticate_user()
+    {
+        $response = $this->get(route('new.project'));
+
+        $response->assertStatus(302);
+        $response->assertRedirect('/login');
+    }
+
+    public function test_create_function_create_project_successfully(){
         $user = User::factory()->create();
         $this->actingAs($user);
 
         $data =[
             'project_name' => 'test project',
-            'description' => 'test project description',
+            'description' => '',
         ];
 
         $response = $this->post(route('create.project'), $data);
@@ -178,14 +205,19 @@ class ProjectTest extends TestCase
         
         $this->assertDatabaseHas('projects', [
             'project_name' => 'test project',
-            'description' => 'test project description',
+            'description' => null,
             'user_id' => $user->id,
         ]);
     }
 
-    public function test_requires_validation_when_create_a_project(){
+    public function test_create_function_requires_validation_when_empty_input(){
         $user = User::factory()->create();
         $this->actingAs($user);
+
+        $data=[
+            'project_name' => '',
+            'description' => null,
+        ];
 
         $response = $this->post(route('create.project'), []);
         $response->assertStatus(302);
@@ -194,7 +226,56 @@ class ProjectTest extends TestCase
         $this->assertDatabaseCount('projects',0); //no record will be created
     }
 
-    public function test_display_edit_project_form(){
+    public function test_create_function_requires_validation_when_inputs_are_not_string(){
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $data=[
+            'project_name'=>123,
+            'description' => 123,
+        ];
+
+        $response = $this->post(route('create.project'), $data);
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors(['project_name', 'description']);
+
+        $this->assertDatabaseCount('projects',0); //no record will be created
+    }
+
+    public function test_create_function_requires_validation_when_inputs_exceed_max_characters(){
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $name = str_repeat('q', 121);
+        $description = str_repeat('d',256);
+
+        $data=[
+            'project_name'=>$name,
+            'description' => $description,
+        ];
+
+        $response = $this->post(route('create.project'), $data);
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors(['project_name', 'description']);
+
+        $this->assertDatabaseCount('projects',0); //no record will be created
+    }
+
+    public function test_create_function_redirect_login_for_unauthenticate_user()
+    {
+        $response = $this->get(route('new.project'));
+
+        $data =[
+            'project_name' => 'test project',
+            'description' => 'test project description',
+        ];
+
+        $response = $this->post(route('create.project'), $data);
+        $response->assertStatus(302);
+        $response->assertRedirect('/login');
+    }
+
+    public function test_showEdit_function_display_edit_project_form(){
         $user = User::factory()->create();
         $this->actingAs($user);
 
@@ -207,7 +288,18 @@ class ProjectTest extends TestCase
         $response->assertViewIs('editproject');
     }
 
-    public function test_edit_project_successully(){
+    public function test_showEdit_redirect_login_for_unauthenticate_user(){
+        $user = User::factory()->create();
+        $project = Project::factory()->create([
+            'user_id' => $user->id,
+        ]);
+
+        $response = $this->get(route('show.edit.project', $project));
+        $response->assertStatus(302);
+        $response->assertRedirect('/login');
+    }
+
+    public function test_edit_function_edit_project_successully(){
         $user = User::factory()->create();
         $this->actingAs($user);
 
@@ -232,13 +324,13 @@ class ProjectTest extends TestCase
         ]);
     }
 
-    public function test_requires_validation_when_edit_a_project(){
+    public function test_edit_function_requires_validation_when_inputs_are_null(){
         $user = User::factory()->create();
         $this->actingAs($user);
 
         $data =[
-            'project_name'=>'',
-            'description'=>'testing description',
+            'project_name'=>null,
+            'description'=>null,
         ];
 
         $project = Project::factory()->create([
@@ -252,7 +344,7 @@ class ProjectTest extends TestCase
         $response->assertSessionHasErrors('project_name');
         
         $this->assertDatabaseMissing('projects',[
-            'project_name'=>'',
+            'project_name'=>null,
         ]);
         $this->assertDatabaseHas('projects',[
             'project_name'=>'test project',
@@ -260,7 +352,87 @@ class ProjectTest extends TestCase
         ]);
     }
 
-    public function test_delete_project_successfully(){
+    public function test_edit_function_requires_validation_when_inputs_are_not_string(){
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $data =[
+            'project_name'=>125,
+            'description'=>126,
+        ];
+
+        $project = Project::factory()->create([
+            'user_id'=>$user->id,
+            'project_name'=>'test project',
+            'description'=> 'project description'
+        ]);
+
+        $response = $this->put(route('edit.project', $project), $data);
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors(['project_name', 'description']);
+        
+        $this->assertDatabaseMissing('projects',[
+            'project_name'=>125,
+            'description'=>126,
+        ]);
+        $this->assertDatabaseHas('projects',[
+            'project_name'=>'test project',
+            'description'=> 'project description',
+        ]);
+    }
+
+    public function test_edit_function_requires_validation_when_inputs_exceed_max_character(){
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $name = str_repeat('a', 121);
+        $description = str_repeat('2', 256);
+        
+        $data =[
+            'project_name'=>$name,
+            'description'=>$description,
+        ];
+
+        $project = Project::factory()->create([
+            'user_id'=>$user->id,
+            'project_name'=>'test project',
+            'description'=> 'project description'
+        ]);
+
+        $response = $this->put(route('edit.project', $project), $data);
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors(['project_name', 'description']);
+        
+        $this->assertDatabaseMissing('projects',[
+            'project_name'=>$name,
+            'description'=>$description,
+        ]);
+        $this->assertDatabaseHas('projects',[
+            'project_name'=>'test project',
+            'description'=> 'project description',
+        ]);
+    }
+
+    public function test_edit_function_redirect_login_for_unauthenticate_user(){
+        $user = User::factory()->create();
+        
+        $data =[
+            'project_name'=>'aa',
+            'description'=>'bb',
+        ];
+
+        $project = Project::factory()->create([
+            'user_id'=>$user->id,
+            'project_name'=>'test project',
+            'description'=> 'project description'
+        ]);
+
+        $response = $this->put(route('edit.project', $project), $data);
+        $response->assertStatus(302);
+        $response->assertRedirect('/login');
+    }
+
+    public function test_delete_function_delete_project_successfully(){
         $user = User::factory()->create();
         $this->actingAs($user);
 
@@ -279,7 +451,7 @@ class ProjectTest extends TestCase
         $this->assertDatabaseCount('tasks', 0);
     }
 
-    public function test_user_has_many_project_relationship(){
+    public function test_delete_function_user_has_many_project_relationship(){
         $user = User::factory()->create();
         $this->actingAs($user);
 
@@ -293,5 +465,17 @@ class ProjectTest extends TestCase
 
         $response = $this->get('/dashboard', [$project1, $project2]);
         $response->assertStatus(200);
+    }
+
+    public function test_delete_function_redirect_login_for_unauthenticate_user   (){
+        $user = User::factory()->create();
+
+        $project1 = Project::factory()->create([
+            'user_id'=>$user->id,
+        ]);
+
+        $response = $this->get('/dashboard', [$project1]);
+        $response->assertStatus(302);
+        $response->assertRedirect('/login');
     }
 }

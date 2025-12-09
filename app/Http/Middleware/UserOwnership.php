@@ -16,7 +16,6 @@ class UserOwnership
      */
     public function handle(Request $request, Closure $next): Response
     {
-
         // Do something BEFORE the request reaches the controller
         $project = $request->route('project');
 
