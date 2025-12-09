@@ -16,16 +16,19 @@ jobs:
     - name: Set up SSH
       run: |
         mkdir -p ~/.ssh
-
-        # Write the full key to the file
         printf "%s" "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
 
-        # Debug: show first 5 lines
+        # Check if file exists
+        echo "Listing ~/.ssh directory:"
+        ls -l ~/.ssh
+
+        # Show first 5 lines safely (GitHub will mask secret content)
+        echo "First 5 lines of the key:"
         head -n 5 ~/.ssh/id_rsa
 
-        # Add host to known_hosts
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        # Test ssh-keyscan without failing the step
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts || echo "ssh-keyscan failed, continuing..."
 
     - name: Deploy to EC2
       run: |
