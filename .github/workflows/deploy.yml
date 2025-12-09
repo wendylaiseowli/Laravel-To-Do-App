@@ -16,8 +16,15 @@ jobs:
     - name: Set up SSH
       run: |
         mkdir -p ~/.ssh
-        printf "%s" "${{ secrets.EC2_SSH_KEY }}" | head -n 5
+
+        # Write the full key to the file
+        printf "%s" "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
+
+        # Debug: show first 5 lines
+        head -n 5 ~/.ssh/id_rsa
+
+        # Add host to known_hosts
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
     - name: Deploy to EC2
